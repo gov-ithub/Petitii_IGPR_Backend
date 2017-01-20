@@ -10,7 +10,7 @@ import java.util.Date;
 public abstract class BaseEntity {
 
     @ApiModelProperty(required = true)
-    protected Integer id;
+    protected Long id;
     protected Date createDate;
     protected Date updateDate;
     protected Date deleteDate;
@@ -19,16 +19,15 @@ public abstract class BaseEntity {
     @GeneratedValue(generator = "increment")
     @GenericGenerator(name = "increment", strategy = "increment")
     @Column(name = "`id`", nullable = false, insertable = true, updatable = false, unique = true)
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
     @Basic
-    @Temporal(TemporalType.DATE)
     @Column(name = "`create_date`", nullable = true, insertable = true, updatable = false)
     public Date getCreateDate() {
         return createDate;
@@ -39,7 +38,6 @@ public abstract class BaseEntity {
     }
 
     @Basic
-    @Temporal(TemporalType.DATE)
     @Column(name = "`update_date`", nullable = true, insertable = true, updatable = true)
     public Date getUpdateDate() {
         return updateDate;
@@ -51,7 +49,6 @@ public abstract class BaseEntity {
 
 
     @Basic
-    @Temporal(TemporalType.DATE)
     @Column(name = "`delete_date`", nullable = true, insertable = true, updatable = true)
     public Date getDeleteDate() {
         return deleteDate;

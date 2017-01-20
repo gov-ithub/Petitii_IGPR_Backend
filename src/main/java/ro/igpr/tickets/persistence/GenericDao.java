@@ -12,10 +12,16 @@ import org.hibernate.criterion.ProjectionList;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import ro.igpr.tickets.config.Constants;
+import ro.igpr.tickets.util.PasswordHash;
 
 import javax.annotation.Resource;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.ValidationException;
 import java.io.File;
 import java.lang.reflect.Field;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +71,16 @@ public class GenericDao {
             final T entity = (T) session.save(o);
             tx.commit();
             return entity;
+        } catch (ConstraintViolationException ex) { // catch all javax validation exceptions here and just show the message
+            tx.rollback();
+            StringBuilder sb = new StringBuilder();
+
+            for (ConstraintViolation c : ex.getConstraintViolations()) {
+                sb.append(c.getPropertyPath()).append(" ").append(c.getMessage()).append(",");
+
+            }
+
+            throw new ValidationException(sb.toString().substring(0, sb.length() - 1));
         } catch (RuntimeException re) {
             tx.rollback();
             throw re;
@@ -123,9 +139,6 @@ public class GenericDao {
             if (order != null)
                 crit.addOrder(order);
 
-            crit.setCacheable(true);
-            crit.setCacheRegion("DimensionQueryCache");
-
             final List<T> entities = crit.list();
             tx.commit();
             if (entities != null && entities.size() > 0) return entities.get(0);
@@ -156,8 +169,7 @@ public class GenericDao {
                 for (Map.Entry<String, Object> entry : params.entrySet())
                     crit.add(Restrictions.eq(entry.getKey(), entry.getValue()));
             }
-            crit.setCacheable(true);
-            crit.setCacheRegion("DimensionQueryCache");
+
             final List<T> entities = crit.list();
             tx.commit();
             if (entities != null && entities.size() > 0) return entities.get(0);
@@ -168,12 +180,12 @@ public class GenericDao {
         }
     }
 
-    public final <T> T get(final Class<T> type, final Integer id) {
+    public final <T> T get(final Class<T> type, final Long id) {
         return get(type, id, true);
     }
 
     /***/
-    public final <T> T get(final Class<T> type, final Integer id, boolean excludeDeleted) {
+    public final <T> T get(final Class<T> type, final Long id, boolean excludeDeleted) {
 
         final Session session = sessionFactory.getCurrentSession();
         final Transaction tx = session.beginTransaction();
@@ -185,7 +197,6 @@ public class GenericDao {
             crit.add(Restrictions.eq("id", id));
 
             final List<T> entities = crit.list();
-//            final T entity = (T) sessionFactory.getCurrentSession().get(type, id);
             tx.commit();
             return (entities != null && entities.size() > 0) ? entities.get(0) : null;
         } catch (RuntimeException re) {
@@ -211,16 +222,16 @@ public class GenericDao {
     }
 
     /***/
-    public final <T> T mergeFromEntities(final T newEntity, Integer entityId) {
+    public final <T> T mergeFromEntities(final T newEntity, Long entityId) {
         return mergeFromEntities(newEntity, entityId, Constants.Messages.OBJECT_NOT_FOUND);
     }
 
     /***/
-    public final <T> T mergeFromEntities(final T newEntity, Integer entityId, String message) {
+    public final <T> T mergeFromEntities(final T newEntity, Long entityId, String message) {
         return mergeFromEntities(newEntity, null, entityId, message);
     }
 
-    public final <T> T mergeFromEntities(final T newEntity, final T passedEntity, final Integer entityId, final String message) {
+    public final <T> T mergeFromEntities(final T newEntity, final T passedEntity, final Long entityId, final String message) {
 
         final Session session = sessionFactory.getCurrentSession();
         final Transaction tx = session.beginTransaction();
@@ -454,5 +465,19 @@ public class GenericDao {
             tx.rollback();
             throw re;
         }
+    }
+
+    public final static String generatePasswordHash(String realPassword) {
+
+        if (realPassword == null || realPassword.length() == 0) return null;
+
+        try {
+            return PasswordHash.createHash(realPassword);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeySpecException e1) {
+            e1.printStackTrace();
+        }
+        return null;
     }
 }

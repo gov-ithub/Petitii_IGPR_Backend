@@ -14,7 +14,9 @@ import ro.igpr.tickets.config.Constants;
 import ro.igpr.tickets.domain.TicketsEntity;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class TicketsController extends BaseController {
 
@@ -54,6 +56,8 @@ public final class TicketsController extends BaseController {
 
         final TicketsEntity entity = request.getBodyAs(TicketsEntity.class, Constants.Messages.RESOURCE_DETAILS_NOT_PROVIDED);
 
+        // set the ticket IP to the IP of the request
+        entity.setIp(request.getRemoteAddress().getAddress().getHostAddress());
         dao.save(entity);
 
         // Bind the resource with link URL tokens, etc. here...
@@ -82,7 +86,7 @@ public final class TicketsController extends BaseController {
 
         super.read(request, response);
 
-        final Integer id = Integer.valueOf(request.getHeader(Constants.Url.TICKET_ID, Constants.Messages.NO_TICKET_ID));
+        final Long id = Long.valueOf(request.getHeader(Constants.Url.TICKET_ID, Constants.Messages.NO_TICKET_ID));
 
         final TicketsEntity ticket = dao.get(TicketsEntity.class, id);
         if (ticket == null) {
@@ -102,12 +106,20 @@ public final class TicketsController extends BaseController {
      * @return
      */
     @ApiImplicitParams({
+            @ApiImplicitParam(name = Constants.Url.USER_ID, required = false, value = "The ticket userId", paramType = "param",
+                    dataType = "int"
+            ),
     })
     public final List<TicketsEntity> readAll(final Request request, final Response response) {
         super.readAll(request, response);
 
+        final Long userId = Long.valueOf(request.getHeader(Constants.Url.USER_ID, Constants.Messages.NO_TICKET_ID));
 
-        final List<TicketsEntity> tickets = dao.getAll(TicketsEntity.class, Order.asc("id"));
+        Map<String, Object> params = new HashMap<>();
+        if (userId != null) {
+            params.put(Constants.Fields.USER_ID, userId);
+        }
+        final List<TicketsEntity> tickets = dao.getAll(TicketsEntity.class, params, Order.asc(Constants.Fields.ID));
 
         HyperExpress.tokenBinder(new TokenBinder<TicketsEntity>() {
             @Override
@@ -131,7 +143,7 @@ public final class TicketsController extends BaseController {
     public final void update(final Request request, final Response response) {
         super.update(request, response);
 
-        final Integer id = Integer.valueOf(request.getHeader(Constants.Url.TICKET_ID, Constants.Messages.NO_TICKET_ID));
+        final Long id = Long.valueOf(request.getHeader(Constants.Url.TICKET_ID, Constants.Messages.NO_TICKET_ID));
         final TicketsEntity ticket = request.getBodyAs(TicketsEntity.class, Constants.Messages.RESOURCE_DETAILS_NOT_PROVIDED);
         if (ticket == null) {
             throw new ItemNotFoundException(Constants.Messages.TICKET_NOT_FOUND);
@@ -140,7 +152,7 @@ public final class TicketsController extends BaseController {
         final Object result = dao.mergeFromEntities(ticket, id, Constants.Messages.TICKET_NOT_FOUND);
 
         if (result == null) {
-            throw new HibernateException("Update failed!");
+            throw new HibernateException(Constants.Messages.UPDATE_FAILED);
         }
 
         response.setResponseNoContent();
@@ -158,7 +170,7 @@ public final class TicketsController extends BaseController {
     public final void delete(final Request request, final Response response) {
         super.delete(request, response);
 
-        final Integer id = Integer.valueOf(request.getHeader(Constants.Url.TICKET_ID, Constants.Messages.NO_TICKET_ID));
+        final Long id = Long.valueOf(request.getHeader(Constants.Url.TICKET_ID, Constants.Messages.NO_TICKET_ID));
         final TicketsEntity entity = dao.get(TicketsEntity.class, id);
 
         if (entity == null) {

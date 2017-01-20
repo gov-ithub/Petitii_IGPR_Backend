@@ -1,9 +1,15 @@
 package ro.igpr.tickets.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.wordnik.swagger.annotations.ApiModel;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.validator.constraints.Email;
+import ro.igpr.tickets.persistence.types.TicketResponse;
+import ro.igpr.tickets.persistence.types.TicketType;
+import ro.igpr.tickets.persistence.validator.cnp.Cnp;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**
@@ -16,20 +22,37 @@ import java.util.List;
         description = "The list of tickets", // Detailed description of the class.
         parent = BaseEntity.class
 )
+@JsonIgnoreProperties(value = {"messages", "attachments"}, allowGetters = true)
 public class TicketsEntity extends BaseEntity {
 
+    private Long userId;
     private Integer ticketCountyId;
+    private TicketType type;
+    private String deviceId;
     private String ip;
     private String name;
     private Integer countyId;
     private String email;
     private String address;
-    private Integer cnp;
+    private String cnp;
     private String phone;
+    private String description;
+    private TicketResponse responseType;
 
     private List<TicketMessagesEntity> messages;
     private List<TicketAttachmentsEntity> attachments;
 
+    @Basic
+    @Column(name = "`user_id`", nullable = true, insertable = true, updatable = true)
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    @NotNull
     @Basic
     @Column(name = "`ticket_county_id`", nullable = false, insertable = true, updatable = true)
     public Integer getTicketCountyId() {
@@ -40,6 +63,29 @@ public class TicketsEntity extends BaseEntity {
         this.ticketCountyId = ticketCountyId;
     }
 
+    @Enumerated(EnumType.STRING)
+    @Basic
+    @Column(name = "`type`", nullable = false, insertable = true, updatable = true)
+    public TicketType getType() {
+        return type != null ? type : TicketType.generic;
+    }
+
+    public void setType(TicketType type) {
+        this.type = type;
+    }
+
+    @NotNull
+    @Basic
+    @Column(name = "`device_id`", nullable = false, insertable = true, updatable = true, length = 100)
+    public String getDeviceId() {
+        return deviceId;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
+    }
+
+    @NotNull
     @Basic
     @Column(name = "`ip`", nullable = false, insertable = true, updatable = true, length = 50)
     public String getIp() {
@@ -50,7 +96,7 @@ public class TicketsEntity extends BaseEntity {
         this.ip = ip;
     }
 
-
+    @NotNull
     @Basic
     @Column(name = "name", nullable = false, insertable = true, updatable = true, length = 200)
     public String getName() {
@@ -61,6 +107,7 @@ public class TicketsEntity extends BaseEntity {
         this.name = name;
     }
 
+    @NotNull
     @Basic
     @Column(name = "`county_id`", nullable = false, insertable = true, updatable = true)
     public Integer getCountyId() {
@@ -71,6 +118,8 @@ public class TicketsEntity extends BaseEntity {
         this.countyId = countyId;
     }
 
+    @NotNull
+    @Email
     @Basic
     @Column(name = "`email`", nullable = false, insertable = true, updatable = true, length = 200)
     public String getEmail() {
@@ -81,6 +130,7 @@ public class TicketsEntity extends BaseEntity {
         this.email = email;
     }
 
+    @NotNull
     @Basic
     @Column(name = "`address`", nullable = false, insertable = true, updatable = true, length = 200)
     public String getAddress() {
@@ -91,16 +141,18 @@ public class TicketsEntity extends BaseEntity {
         this.address = address;
     }
 
+    @Cnp
     @Basic
-    @Column(name = "`cnp`", nullable = false, insertable = true, updatable = true)
-    public Integer getCnp() {
+    @Column(name = "`cnp`", nullable = false, insertable = true, updatable = true, length = 13)
+    public String getCnp() {
         return cnp;
     }
 
-    public void setCnp(Integer cnp) {
+    public void setCnp(String cnp) {
         this.cnp = cnp;
     }
 
+    @NotNull
     @Basic
     @Column(name = "`phone`", nullable = false, insertable = true, updatable = true, length = 50)
     public String getPhone() {
@@ -111,6 +163,27 @@ public class TicketsEntity extends BaseEntity {
         this.phone = phone;
     }
 
+    @NotNull
+    @Basic
+    @Column(name = "`description`", nullable = false, insertable = true, updatable = true)
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Basic
+    @Column(name = "`response_type`", nullable = false, insertable = true, updatable = true)
+    public TicketResponse getResponseType() {
+        return responseType != null ? responseType : TicketResponse.email;
+    }
+
+    public void setResponseType(TicketResponse responseType) {
+        this.responseType = responseType;
+    }
 
     @OneToMany(mappedBy = "ticketId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     public List<TicketMessagesEntity> getMessages() {
@@ -140,21 +213,28 @@ public class TicketsEntity extends BaseEntity {
 
         if (getTicketCountyId() != null ? !getTicketCountyId().equals(that.getTicketCountyId()) : that.getTicketCountyId() != null)
             return false;
-        if (getIp() != null ? !getIp().equals(that.getIp()) : that.getIp() != null) return false;
-        if (getName() != null ? !getName().equals(that.getName()) : that.getName() != null)
+        if (getType() != that.getType()) return false;
+        if (getDeviceId() != null ? !getDeviceId().equals(that.getDeviceId()) : that.getDeviceId() != null)
             return false;
+        if (getIp() != null ? !getIp().equals(that.getIp()) : that.getIp() != null) return false;
+        if (getName() != null ? !getName().equals(that.getName()) : that.getName() != null) return false;
         if (getCountyId() != null ? !getCountyId().equals(that.getCountyId()) : that.getCountyId() != null)
             return false;
         if (getEmail() != null ? !getEmail().equals(that.getEmail()) : that.getEmail() != null) return false;
         if (getAddress() != null ? !getAddress().equals(that.getAddress()) : that.getAddress() != null) return false;
         if (getCnp() != null ? !getCnp().equals(that.getCnp()) : that.getCnp() != null) return false;
-        return getPhone() != null ? getPhone().equals(that.getPhone()) : that.getPhone() == null;
+        if (getPhone() != null ? !getPhone().equals(that.getPhone()) : that.getPhone() != null) return false;
+        if (getDescription() != null ? !getDescription().equals(that.getDescription()) : that.getDescription() != null)
+            return false;
+        return getResponseType() == that.getResponseType();
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (getTicketCountyId() != null ? getTicketCountyId().hashCode() : 0);
+        result = 31 * result + (getType() != null ? getType().hashCode() : 0);
+        result = 31 * result + (getDeviceId() != null ? getDeviceId().hashCode() : 0);
         result = 31 * result + (getIp() != null ? getIp().hashCode() : 0);
         result = 31 * result + (getName() != null ? getName().hashCode() : 0);
         result = 31 * result + (getCountyId() != null ? getCountyId().hashCode() : 0);
@@ -162,6 +242,8 @@ public class TicketsEntity extends BaseEntity {
         result = 31 * result + (getAddress() != null ? getAddress().hashCode() : 0);
         result = 31 * result + (getCnp() != null ? getCnp().hashCode() : 0);
         result = 31 * result + (getPhone() != null ? getPhone().hashCode() : 0);
+        result = 31 * result + (getDescription() != null ? getDescription().hashCode() : 0);
+        result = 31 * result + (getResponseType() != null ? getResponseType().hashCode() : 0);
         return result;
     }
 
@@ -169,13 +251,17 @@ public class TicketsEntity extends BaseEntity {
     public String toString() {
         return "TicketsEntity{" +
                 "ticketCountyId=" + ticketCountyId +
+                ", type=" + type +
+                ", deviceId='" + deviceId + '\'' +
                 ", ip='" + ip + '\'' +
                 ", name='" + name + '\'' +
                 ", countyId=" + countyId +
                 ", email='" + email + '\'' +
                 ", address='" + address + '\'' +
-                ", cnp=" + cnp +
+                ", cnp='" + cnp + '\'' +
                 ", phone='" + phone + '\'' +
+                ", description='" + description + '\'' +
+                ", responseType=" + responseType +
                 '}';
     }
 }
