@@ -21,13 +21,12 @@
     <Loggers>
         <Root level="debug">
             <AppenderRef ref="RollingFile"/>
-            <AppenderRef ref="STDOUT"/>
         </Root>
         <Logger name="ro.igpr.tickets" level="debug"/>
-        <Logger name="org.restexpress.domain" level="info"/>
-        <Logger name="org.hibernate" level="error"/>
-        <Logger name="org.hibernate.SQL" level="error"/>
-        <Logger name="org.hibernate.type" level="error"/>
+        <Logger name="org.restexpress.domain" level="debug"/>
+        <Logger name="org.hibernate" level="info"/>
+        <Logger name="org.hibernate.SQL" level="info"/>
+        <Logger name="org.hibernate.type" level="info"/>
 
         <logger name="com.zaxxer.hikari" level="error"/>
         <Logger name="org.hibernate.hikaricp" level="error"/>

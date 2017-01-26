@@ -21,7 +21,6 @@
     <Loggers>
         <Root level="info">
             <AppenderRef ref="RollingFile"/>
-            <AppenderRef ref="STDOUT"/>
         </Root>
         <Logger name="ro.igpr.tickets" level="error"/>
         <Logger name="org.restexpress.domain" level="error"/>

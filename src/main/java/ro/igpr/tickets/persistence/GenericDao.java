@@ -11,10 +11,12 @@ import org.hibernate.criterion.Order;
 import org.hibernate.criterion.ProjectionList;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
+import org.restexpress.exception.ConflictException;
 import ro.igpr.tickets.config.Constants;
 import ro.igpr.tickets.util.PasswordHash;
 
 import javax.annotation.Resource;
+import javax.persistence.PersistenceException;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.ValidationException;
@@ -34,7 +36,7 @@ public class GenericDao {
     private static GenericDao instance;
 
     @Resource(name = "sessionFactory")
-    private static final SessionFactory sessionFactory = getSessionFactory();
+    protected static final SessionFactory sessionFactory = getSessionFactory();
 
     public static GenericDao getInstance() {
         if (instance == null) {
@@ -44,7 +46,7 @@ public class GenericDao {
         return instance;
     }
 
-    public final static SessionFactory getSessionFactory() {
+    private final static SessionFactory getSessionFactory() {
 
         if (sessionFactory == null) {
             try {
@@ -67,10 +69,21 @@ public class GenericDao {
         final Session session = sessionFactory.getCurrentSession();
         final Transaction tx = session.beginTransaction();
 
+        T entity = null;
+        RuntimeException exception = null;
         try {
-            final T entity = (T) session.save(o);
+
+            entity = (T) session.save(o);
             tx.commit();
-            return entity;
+
+        } catch (PersistenceException ex) {
+            tx.rollback();
+            StringBuilder sb = new StringBuilder();
+            if (ex.getCause().getClass().equals(org.hibernate.exception.ConstraintViolationException.class)) {
+                org.hibernate.exception.ConstraintViolationException cve = (org.hibernate.exception.ConstraintViolationException) ex.getCause();
+                sb.append(cve.getSQLException().getLocalizedMessage());
+            }
+            exception = new ConflictException(sb.toString());
         } catch (ConstraintViolationException ex) { // catch all javax validation exceptions here and just show the message
             tx.rollback();
             StringBuilder sb = new StringBuilder();
@@ -80,11 +93,15 @@ public class GenericDao {
 
             }
 
-            throw new ValidationException(sb.toString().substring(0, sb.length() - 1));
+            exception = new ValidationException(sb.toString().substring(0, sb.length() - 1));
         } catch (RuntimeException re) {
             tx.rollback();
-            throw re;
+            exception = re;
+        } finally {
+            if (exception != null)
+                throw exception;
         }
+        return entity;
     }
 
     public final void delete(final Object object) {

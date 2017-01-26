@@ -1,15 +1,14 @@
 package ro.igpr.tickets.domain;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.strategicgains.restexpress.plugin.swagger.annotations.ApiModelProperty;
 import com.wordnik.swagger.annotations.ApiModel;
 import org.hibernate.annotations.DynamicUpdate;
 import ro.igpr.tickets.util.AttachmentUtil;
 
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 /**
@@ -22,14 +21,19 @@ import javax.validation.constraints.NotNull;
         description = "The list of ticket attachments",
         parent = BaseEntity.class
 )
-@JsonIgnoreProperties(value = {"url"}, allowGetters = true)
+@JsonIgnoreProperties(value = {"url"}, allowGetters = true, allowSetters = false)
 public class TicketAttachmentsEntity extends BaseEntity {
 
     @JsonIgnore
+    @ApiModelProperty(hidden = true)
     private Long ticketId;
+    @ApiModelProperty(required = false)
     private String url;
+    @ApiModelProperty(hidden = true)
     private String fileName;
+    @ApiModelProperty(required = true)
     private String originalFileName;
+    @ApiModelProperty(required = true)
     private String contentType;
 
     public TicketAttachmentsEntity() {
@@ -53,6 +57,8 @@ public class TicketAttachmentsEntity extends BaseEntity {
         this.ticketId = ticketId;
     }
 
+    @Transient
+    @JsonGetter("url")
     public String getUrl() {
         return url != null ? url : AttachmentUtil.getUrlFromFileName(this.getFileName());
     }
@@ -61,6 +67,7 @@ public class TicketAttachmentsEntity extends BaseEntity {
         this.url = url != null ? url : AttachmentUtil.getUrlFromFileName(this.getFileName());
     }
 
+    @JsonIgnore
     @NotNull
     @Basic
     @Column(name = "`file_name`", nullable = false, insertable = true, updatable = true)
